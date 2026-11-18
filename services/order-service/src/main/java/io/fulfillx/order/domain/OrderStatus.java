@@ -1,0 +1,5 @@
+package io.fulfillx.order.domain;
+
+public enum OrderStatus {
+    PENDING, INVENTORY_RESERVED, PAYMENT_AUTHORIZED, CONFIRMED, REJECTED, CANCELLED, COMPENSATION_PENDING
+}

@@ -1,0 +1,19 @@
+asyncapi: 2.6.0
+info:
+  title: FulfillX Notification Messaging
+  version: 1.0.0
+  description: Notification consumes final Order events from its filtered SNS-to-SQS subscription and records/delivers email through a local adapter.
+defaultContentType: application/json
+channels:
+  fulfillx-notification-events:
+    description: Standard SQS queue; receives OrderConfirmed, OrderRejected, and OrderCancelled; redrive to fulfillx-notification-events-dlq after five receives.
+    subscribe:
+      operationId: consumeFinalOrderEvent
+      message:
+        $ref: '#/components/messages/FinalOrderEvent'
+components:
+  messages:
+    FinalOrderEvent:
+      name: FinalOrderEvent
+      payload:
+        $ref: '../schemas/order-final-event.schema.json'

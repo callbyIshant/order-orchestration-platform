@@ -1,0 +1,29 @@
+asyncapi: 2.6.0
+info:
+  title: FulfillX Payment Messaging
+  version: 1.0.0
+  description: Payment consumes simulated authorization/refund commands and publishes result events through the shared SNS topic.
+defaultContentType: application/json
+channels:
+  fulfillx-payment-commands:
+    description: Standard SQS Payment command queue; redrive to fulfillx-payment-commands-dlq after five receives.
+    subscribe:
+      operationId: consumePaymentCommand
+      message:
+        $ref: '#/components/messages/PaymentCommand'
+  fulfillx-domain-events:
+    description: Shared SNS domain-events topic; Order Results subscribes to Payment result types.
+    publish:
+      operationId: publishPaymentResult
+      message:
+        $ref: '#/components/messages/PaymentResult'
+components:
+  messages:
+    PaymentCommand:
+      name: PaymentCommand
+      payload:
+        $ref: '../schemas/payment-command.schema.json'
+    PaymentResult:
+      name: PaymentResult
+      payload:
+        $ref: '../schemas/payment-result-event.schema.json'

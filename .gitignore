@@ -1,0 +1,32 @@
+# Java and Maven
+**/target/
+*.class
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and test output
+*.log
+coverage/
+
+# IDE and operating system files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Terraform state and local working data
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Local containers and database volumes
+.local-data/
+
+# Maven Wrapper downloads are held outside the repository by default.

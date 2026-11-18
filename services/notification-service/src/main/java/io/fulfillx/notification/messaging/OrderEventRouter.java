@@ -1,0 +1,3 @@
+package io.fulfillx.notification.messaging;
+import com.fasterxml.jackson.databind.ObjectMapper;import io.fulfillx.notification.application.NotificationProcessor;import org.springframework.stereotype.Component;
+@Component public class OrderEventRouter{private final ObjectMapper mapper;private final NotificationProcessor processor;public OrderEventRouter(ObjectMapper mapper,NotificationProcessor processor){this.mapper=mapper;this.processor=processor;}public void handle(String body){try{processor.process(mapper.readValue(body,OrderEventEnvelope.class));}catch(java.io.IOException ex){throw new IllegalArgumentException("Malformed Order event",ex);}}}

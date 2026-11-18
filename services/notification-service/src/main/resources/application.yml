@@ -1,0 +1,85 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${NOTIFICATION_JDBC_URL:jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:5432}/notification_db}
+    username: ${NOTIFICATION_DB_USER:notification_user}
+    password: ${NOTIFICATION_DB_PASSWORD}
+  flyway:
+    enabled: true
+  mail:
+    host: ${MAIL_HOST:127.0.0.1}
+    port: ${MAIL_PORT:${MAILPIT_SMTP_PORT:1025}}
+    properties:
+      mail.smtp.connectiontimeout: 2000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 3000
+  task:
+    scheduling:
+      pool:
+        size: 2
+aws:
+  region: ${AWS_REGION:us-east-1}
+  endpoint-url: ${AWS_ENDPOINT_URL:}
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+notification:
+  messaging:
+    consumer-enabled: ${NOTIFICATION_CONSUMER_ENABLED:true}
+    queue-name: ${NOTIFICATION_EVENTS_QUEUE:fulfillx-notification-events}
+    dlq-name: ${NOTIFICATION_EVENTS_DLQ:fulfillx-notification-events-dlq}
+  poll-ms: ${NOTIFICATION_CONSUMER_POLL_MS:1000}
+  visibility-base-seconds: ${NOTIFICATION_VISIBILITY_BASE_SECONDS:2}
+  visibility-max-seconds: ${NOTIFICATION_VISIBILITY_MAX_SECONDS:30}
+  delivery:
+    mode: ${NOTIFICATION_DELIVERY_MODE:mailpit}
+    from: ${NOTIFICATION_FROM:notifications@fulfillx.local}
+    max-attempts: ${NOTIFICATION_MAX_ATTEMPTS:5}
+server:
+  port: ${SERVER_PORT:8085}
+
+fulfillx:
+  oidc:
+    provider: ${FULFILLX_OIDC_PROVIDER:cognito}
+    issuer-uri: ${FULFILLX_OIDC_ISSUER_URI:}
+    jwk-set-uri: ${FULFILLX_OIDC_JWK_SET_URI:}
+    audience: ${FULFILLX_OIDC_AUDIENCE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    group:
+      liveness:
+        include: livenessState
+      readiness:
+        include: readinessState,db
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLING_PROBABILITY:0.1}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+      export:
+        enabled: ${OTEL_TRACES_ENABLED:true}
+
+logging:
+  structured:
+    ecs:
+      service:
+        name: ${spring.application.name}
+    format:
+      console: ecs
+
+

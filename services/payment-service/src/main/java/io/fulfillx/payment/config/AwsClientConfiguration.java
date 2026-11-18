@@ -1,0 +1,15 @@
+package io.fulfillx.payment.config;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sqs.SqsClient;
+import java.net.URI;
+@Configuration
+public class AwsClientConfiguration {
+ @Bean(destroyMethod="close") SnsClient paymentSns(@Value("${aws.region}") String region,@Value("${aws.endpoint-url:}") String endpoint,@Value("${aws.access-key-id:}") String key,@Value("${aws.secret-access-key:}") String secret){var b=SnsClient.builder().region(Region.of(region)).credentialsProvider(credentials(key,secret));if(!endpoint.isBlank())b.endpointOverride(URI.create(endpoint));return b.build();}
+ @Bean(destroyMethod="close") SqsClient paymentSqs(@Value("${aws.region}") String region,@Value("${aws.endpoint-url:}") String endpoint,@Value("${aws.access-key-id:}") String key,@Value("${aws.secret-access-key:}") String secret){var b=SqsClient.builder().region(Region.of(region)).credentialsProvider(credentials(key,secret));if(!endpoint.isBlank())b.endpointOverride(URI.create(endpoint));return b.build();}
+ private static AwsCredentialsProvider credentials(String key,String secret){boolean k=key!=null&&!key.isBlank(),s=secret!=null&&!secret.isBlank();if(k!=s)throw new IllegalStateException("AWS access key and secret must be configured together.");return k?StaticCredentialsProvider.create(AwsBasicCredentials.create(key,secret)):DefaultCredentialsProvider.builder().build();}
+}

@@ -1,0 +1,69 @@
+{
+  "realm": "fulfillx",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      { "name": "CUSTOMER", "description": "FulfillX customer" },
+      { "name": "OPERATIONS", "description": "Catalog and inventory operations" },
+      { "name": "ADMIN", "description": "Platform operations administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fulfillx-api",
+      "name": "FulfillX local API",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": ["https://oauth.pstmn.io/v1/callback", "http://localhost:*"],
+      "webOrigins": ["+"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://oauth.pstmn.io/v1/callback##http://localhost/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "roles claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "fulfillx API audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "fulfillx-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "demo-customer",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "demo-customer@example.invalid",
+      "firstName": "Demo",
+      "lastName": "Customer",
+      "credentials": [
+        { "type": "password", "value": "local-customer-password", "temporary": false }
+      ],
+      "realmRoles": ["CUSTOMER"]
+    }
+  ]
+}

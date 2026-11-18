@@ -1,0 +1,91 @@
+spring:
+  application:
+    name: inventory-service
+  task:
+    scheduling:
+      pool:
+        size: 2
+  datasource:
+    url: ${INVENTORY_JDBC_URL:jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:5432}/inventory_db}
+    username: ${INVENTORY_DB_USER:inventory_user}
+    password: ${INVENTORY_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+inventory:
+  messaging:
+    consumer-enabled: ${INVENTORY_CONSUMER_ENABLED:true}
+    queue-name: ${INVENTORY_COMMANDS_QUEUE:fulfillx-inventory-commands}
+    dlq-name: ${INVENTORY_COMMANDS_DLQ:fulfillx-inventory-commands-dlq}
+    topic-arn: ${FULFILLX_DOMAIN_EVENTS_TOPIC_ARN:}
+    topic-name: ${FULFILLX_DOMAIN_EVENTS_TOPIC:fulfillx-domain-events}
+    visibility-base-seconds: ${INVENTORY_VISIBILITY_BASE_SECONDS:2}
+    visibility-max-seconds: ${INVENTORY_VISIBILITY_MAX_SECONDS:30}
+  outbox:
+    publisher-enabled: ${INVENTORY_OUTBOX_PUBLISHER_ENABLED:true}
+    poll-ms: ${INVENTORY_OUTBOX_POLL_MS:1000}
+    batch-size: ${INVENTORY_OUTBOX_BATCH_SIZE:20}
+    lease-seconds: ${INVENTORY_OUTBOX_LEASE_SECONDS:30}
+    retry-seconds: ${INVENTORY_OUTBOX_RETRY_SECONDS:5}
+aws:
+  region: ${AWS_REGION:us-east-1}
+  endpoint-url: ${AWS_ENDPOINT_URL:}
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+
+server:
+  port: ${SERVER_PORT:8083}
+
+fulfillx:
+  oidc:
+    provider: ${FULFILLX_OIDC_PROVIDER:cognito}
+    issuer-uri: ${FULFILLX_OIDC_ISSUER_URI:}
+    jwk-set-uri: ${FULFILLX_OIDC_JWK_SET_URI:}
+    audience: ${FULFILLX_OIDC_AUDIENCE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    group:
+      liveness:
+        include: livenessState
+      readiness:
+        include: readinessState,db
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLING_PROBABILITY:0.1}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+      export:
+        enabled: ${OTEL_TRACES_ENABLED:true}
+
+logging:
+  structured:
+    ecs:
+      service:
+        name: ${spring.application.name}
+    format:
+      console: ecs
+
+

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fulfillx.local/schemas/inventory-result-event.schema.json",
+  "title": "Inventory result event envelope",
+  "type": "object",
+  "required": ["messageId", "messageType", "schemaVersion", "occurredAt", "correlationId", "causationId", "aggregateType", "aggregateId", "payload"],
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "enum": ["InventoryReserved", "InventoryRejected", "InventoryCommitted", "InventoryCommitRejected", "ReservationReleased"] },
+    "schemaVersion": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "aggregateType": { "const": "InventoryReservation" },
+    "aggregateId": { "type": "string", "format": "uuid", "description": "Inventory reservation ID." },
+    "payload": {
+      "type": "object",
+      "required": ["orderId", "reservationId"],
+      "properties": {
+        "orderId": { "type": "string", "format": "uuid" },
+        "reservationId": { "type": "string", "format": "uuid" },
+        "reasonCode": { "enum": ["PRODUCT_NOT_STOCKED", "INSUFFICIENT_STOCK", "INVENTORY_MISSING", "RESERVATION_INVARIANT_VIOLATION"] },
+        "reservationState": { "enum": ["RESERVED"] },
+        "productId": { "type": "string", "format": "uuid" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

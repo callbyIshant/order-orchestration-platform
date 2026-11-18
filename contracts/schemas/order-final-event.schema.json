@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fulfillx.local/schemas/order-final-event.schema.json",
+  "title": "Final Order event envelope",
+  "type": "object",
+  "required": ["messageId", "messageType", "schemaVersion", "occurredAt", "correlationId", "causationId", "aggregateType", "aggregateId", "payload"],
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "enum": ["OrderConfirmed", "OrderRejected", "OrderCancelled"] },
+    "schemaVersion": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "aggregateType": { "const": "Order" },
+    "aggregateId": { "type": "string", "format": "uuid" },
+    "payload": { "type": "object", "required": ["orderId"], "properties": { "orderId": { "type": "string", "format": "uuid" }, "amount": { "type": "number", "minimum": 0 }, "currency": { "const": "INR" }, "reasonCode": { "type": "string" } }, "additionalProperties": false }
+  },
+  "additionalProperties": false
+}

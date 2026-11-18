@@ -1,0 +1,137 @@
+name: fulfillx
+
+services:
+  postgres:
+    image: postgres:17.12-alpine3.24
+    environment:
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:?Copy .env.example to .env and set local defaults}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_ADMIN_DB:-fulfillx_admin}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      CATALOG_DB_NAME: ${CATALOG_DB_NAME:-catalog_db}
+      CATALOG_DB_USER: ${CATALOG_DB_USER:-catalog_user}
+      CATALOG_DB_PASSWORD: ${CATALOG_DB_PASSWORD:?Set CATALOG_DB_PASSWORD in .env}
+      ORDER_DB_NAME: ${ORDER_DB_NAME:-order_db}
+      ORDER_DB_USER: ${ORDER_DB_USER:-order_user}
+      ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:?Set ORDER_DB_PASSWORD in .env}
+      INVENTORY_DB_NAME: ${INVENTORY_DB_NAME:-inventory_db}
+      INVENTORY_DB_USER: ${INVENTORY_DB_USER:-inventory_user}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD:?Set INVENTORY_DB_PASSWORD in .env}
+      PAYMENT_DB_NAME: ${PAYMENT_DB_NAME:-payment_db}
+      PAYMENT_DB_USER: ${PAYMENT_DB_USER:-payment_user}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?Set PAYMENT_DB_PASSWORD in .env}
+      NOTIFICATION_DB_NAME: ${NOTIFICATION_DB_NAME:-notification_db}
+      NOTIFICATION_DB_USER: ${NOTIFICATION_DB_USER:-notification_user}
+      NOTIFICATION_DB_PASSWORD: ${NOTIFICATION_DB_PASSWORD:?Set NOTIFICATION_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/local/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  localstack:
+    image: localstack/localstack:2026.10.7
+    environment:
+      SERVICES: sns,sqs
+      DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      AWS_DEFAULT_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?Set the local AWS_ACCESS_KEY_ID in .env}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?Set the local AWS_SECRET_ACCESS_KEY in .env}
+      LOCALSTACK_AUTH_TOKEN: ${LOCALSTACK_AUTH_TOKEN:-}
+      PERSISTENCE: "1"
+      FULFILLX_DOMAIN_EVENTS_TOPIC: ${FULFILLX_DOMAIN_EVENTS_TOPIC:-fulfillx-domain-events}
+      INVENTORY_COMMANDS_QUEUE: ${INVENTORY_COMMANDS_QUEUE:-fulfillx-inventory-commands}
+      INVENTORY_COMMANDS_DLQ: ${INVENTORY_COMMANDS_DLQ:-fulfillx-inventory-commands-dlq}
+      PAYMENT_COMMANDS_QUEUE: ${PAYMENT_COMMANDS_QUEUE:-fulfillx-payment-commands}
+      PAYMENT_COMMANDS_DLQ: ${PAYMENT_COMMANDS_DLQ:-fulfillx-payment-commands-dlq}
+      ORDER_RESULTS_QUEUE: ${ORDER_RESULTS_QUEUE:-fulfillx-order-results}
+      ORDER_RESULTS_DLQ: ${ORDER_RESULTS_DLQ:-fulfillx-order-results-dlq}
+      NOTIFICATION_EVENTS_QUEUE: ${NOTIFICATION_EVENTS_QUEUE:-fulfillx-notification-events}
+      NOTIFICATION_EVENTS_DLQ: ${NOTIFICATION_EVENTS_DLQ:-fulfillx-notification-events-dlq}
+    ports:
+      - "127.0.0.1:${LOCALSTACK_PORT:-4566}:4566"
+    volumes:
+      - localstack-data:/var/lib/localstack
+      - ./infrastructure/local/localstack/init:/etc/localstack/init/ready.d:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import json, urllib.request;
+          init = json.load(urllib.request.urlopen('http://localhost:4566/_localstack/init/ready', timeout=2));
+          health = json.load(urllib.request.urlopen('http://localhost:4566/_localstack/health', timeout=2));
+          assert init.get('completed') and all(health.get('services', {}).get(s) == 'running' for s in ('sns', 'sqs'))
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:?Set KEYCLOAK_ADMIN_USERNAME in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env}
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME: http://127.0.0.1:${KEYCLOAK_PORT:-8080}
+    ports:
+      - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - ./infrastructure/local/keycloak/import:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000 && echo -e \"GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3 && grep -q \\\"200 OK\\\" <&3'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
+  mailpit:
+    image: axllent/mailpit:v1.33.1
+    environment:
+      MP_DATABASE: /data/mailpit.db
+      MP_DISABLE_VERSION_CHECK: "true"
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+    volumes:
+      - mailpit-data:/data
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./infrastructure/local/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./.local-data/prometheus:/etc/prometheus/secrets:ro
+      - prometheus-data:/prometheus
+
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.23.0
+    ports:
+      - "127.0.0.1:${JAEGER_UI_PORT:-16686}:16686"
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+
+volumes:
+  postgres-data:
+  localstack-data:
+  mailpit-data:
+  prometheus-data:

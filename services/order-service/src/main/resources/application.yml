@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: ${ORDER_JDBC_URL:jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:5432}/order_db}
+    username: ${ORDER_DB_USER:order_user}
+    password: ${ORDER_DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+  task:
+    scheduling:
+      pool:
+        size: 3
+
+fulfillx:
+  catalog:
+    base-url: ${CATALOG_BASE_URL:http://127.0.0.1:8081}
+    connect-timeout: ${CATALOG_CONNECT_TIMEOUT:250ms}
+    response-timeout: ${CATALOG_RESPONSE_TIMEOUT:1s}
+    total-timeout: ${CATALOG_TOTAL_TIMEOUT:2s}
+    max-concurrent-lookups: ${CATALOG_MAX_CONCURRENT_LOOKUPS:10}
+  aws:
+    region: ${AWS_REGION:us-east-1}
+    endpoint-url: ${AWS_ENDPOINT_URL:}
+    access-key-id: ${AWS_ACCESS_KEY_ID:}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+    inventory-queue: ${INVENTORY_COMMANDS_QUEUE:fulfillx-inventory-commands}
+    payment-queue: ${PAYMENT_COMMANDS_QUEUE:fulfillx-payment-commands}
+    order-results-queue: ${ORDER_RESULTS_QUEUE:fulfillx-order-results}
+    order-results-dlq: ${ORDER_RESULTS_DLQ:fulfillx-order-results-dlq}
+    domain-events-topic-arn: ${FULFILLX_DOMAIN_EVENTS_TOPIC_ARN:}
+  messaging:
+    consumer-enabled: ${ORDER_CONSUMER_ENABLED:true}
+    poll-ms: ${ORDER_CONSUMER_POLL_MS:1000}
+    visibility-base-seconds: ${ORDER_VISIBILITY_BASE_SECONDS:2}
+    visibility-max-seconds: ${ORDER_VISIBILITY_MAX_SECONDS:30}
+  outbox:
+    publisher-enabled: ${ORDER_OUTBOX_PUBLISHER_ENABLED:true}
+    poll-ms: ${ORDER_OUTBOX_POLL_MS:1000}
+    batch-size: ${ORDER_OUTBOX_BATCH_SIZE:20}
+    lease-seconds: ${ORDER_OUTBOX_LEASE_SECONDS:30}
+    retry-seconds: ${ORDER_OUTBOX_RETRY_SECONDS:5}
+  oidc:
+    provider: ${FULFILLX_OIDC_PROVIDER:cognito}
+    issuer-uri: ${FULFILLX_OIDC_ISSUER_URI:}
+    jwk-set-uri: ${FULFILLX_OIDC_JWK_SET_URI:}
+    audience: ${FULFILLX_OIDC_AUDIENCE:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  health:
+    group:
+      liveness:
+        include: livenessState
+      readiness:
+        include: readinessState,db
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLING_PROBABILITY:0.1}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+      export:
+        enabled: ${OTEL_TRACES_ENABLED:true}
+
+logging:
+  structured:
+    ecs:
+      service:
+        name: ${spring.application.name}
+    format:
+      console: ecs
+
+server:
+  port: ${SERVER_PORT:8082}
+
+

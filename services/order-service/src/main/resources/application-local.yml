@@ -1,0 +1,18 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+
+fulfillx:
+  oidc:
+    provider: keycloak
+    issuer-uri: ${FULFILLX_OIDC_ISSUER_URI:http://127.0.0.1:8080/realms/fulfillx}
+    jwk-set-uri: ${FULFILLX_OIDC_JWK_SET_URI:http://127.0.0.1:8080/realms/fulfillx/protocol/openid-connect/certs}
+    audience: ${FULFILLX_OIDC_AUDIENCE:fulfillx-api}
+
+management:
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://127.0.0.1:4318/v1/traces}
+  tracing:
+    sampling:
+      probability: ${TRACE_SAMPLING_PROBABILITY:1.0}

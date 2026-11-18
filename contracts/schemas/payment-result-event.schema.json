@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fulfillx.local/schemas/payment-result-event.schema.json",
+  "title": "Payment result event envelope",
+  "type": "object",
+  "required": ["messageId", "messageType", "schemaVersion", "occurredAt", "correlationId", "causationId", "aggregateType", "aggregateId", "payload"],
+  "properties": {
+    "messageId": { "type": "string", "format": "uuid" },
+    "messageType": { "enum": ["PaymentAuthorized", "PaymentDeclined", "PaymentRefunded"] },
+    "schemaVersion": { "const": 1 },
+    "occurredAt": { "type": "string", "format": "date-time" },
+    "correlationId": { "type": "string", "format": "uuid" },
+    "causationId": { "type": "string", "format": "uuid" },
+    "aggregateType": { "const": "PaymentTransaction" },
+    "aggregateId": { "type": "string", "format": "uuid" },
+    "payload": { "type": "object", "required": ["orderId", "paymentId"], "properties": { "orderId": { "type": "string", "format": "uuid" }, "paymentId": { "type": "string", "format": "uuid" }, "amount": { "type": "number", "minimum": 0 }, "currency": { "const": "INR" }, "reasonCode": { "enum": ["AUTHORIZED", "PAYMENT_DECLINED", "INVALID_TOKEN", "REFUNDED"] } }, "additionalProperties": false }
+  },
+  "additionalProperties": false
+}

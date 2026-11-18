@@ -1,0 +1,29 @@
+asyncapi: 2.6.0
+info:
+  title: FulfillX Inventory Messaging
+  version: 1.0.0
+  description: Order commands consumed by Inventory and Inventory results published to the shared SNS domain-events topic.
+defaultContentType: application/json
+channels:
+  fulfillx-inventory-commands:
+    description: Standard SQS queue; redrive to fulfillx-inventory-commands-dlq after five receives.
+    subscribe:
+      operationId: consumeInventoryCommand
+      message:
+        $ref: '#/components/messages/InventoryCommand'
+  fulfillx-domain-events:
+    description: SNS topic; Inventory publishes result envelopes consumed by the Order Results SQS subscription, filtered on messageType.
+    publish:
+      operationId: publishInventoryResult
+      message:
+        $ref: '#/components/messages/InventoryResult'
+components:
+  messages:
+    InventoryCommand:
+      name: InventoryCommand
+      payload:
+        $ref: '../schemas/inventory-command.schema.json'
+    InventoryResult:
+      name: InventoryResult
+      payload:
+        $ref: '../schemas/inventory-result-event.schema.json'
